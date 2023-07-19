@@ -1,5 +1,6 @@
 package com.employeemanagementsystem;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -8,7 +9,7 @@ public class EmployeeResponseDTO {
     private String name;
     private LocalDate dob;
     private Integer managerId;
-    private Double salary;
+    private BigDecimal salary;
     private String emailId;
     private List<PhoneNumberDTO> phoneNumbers;
     private VoterIDDTO voterID;
@@ -36,11 +37,11 @@ public class EmployeeResponseDTO {
 	public void setManagerId(Integer managerId) {
 		this.managerId = managerId;
 	}
-	public Double getSalary() {
+	public BigDecimal getSalary() {
 		return salary;
 	}
-	public void setSalary(Double salary) {
-		this.salary = salary;
+	public void setSalary(BigDecimal bigDecimal) {
+		this.salary = bigDecimal;
 	}
 	public String getEmailId() {
 		return emailId;

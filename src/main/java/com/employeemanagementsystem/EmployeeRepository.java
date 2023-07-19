@@ -1,5 +1,6 @@
 package com.employeemanagementsystem;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,4 +14,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     public List<Employee> findByManagerId(Integer managerId);
 
+    @Query("SELECT e FROM Employee e WHERE e.salary > :salary")
+    public List<Employee> findBySalaryGreaterThan(@Param("salary")BigDecimal salary);
+
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.voterID WHERE e.voterID IS NULL")
+    public List<Employee> findByVoterIdIsNull();
 }

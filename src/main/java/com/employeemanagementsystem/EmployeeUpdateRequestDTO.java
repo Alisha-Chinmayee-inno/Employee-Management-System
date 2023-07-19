@@ -1,20 +1,32 @@
 package com.employeemanagementsystem;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class EmployeeUpdateRequestDTO {
+	private Integer employeeId;
     private String name;
     private LocalDate dob;
     private Integer managerId;
-    private Double salary;
+    private BigDecimal salary;
     private String emailId;
     private List<PhoneNumberDTO> phoneNumbers;
     private VoterIDDTO voterID;
-
+    private LocalDateTime createdDateTime;
+    private LocalDateTime updatedDateTime;
     
 	public EmployeeUpdateRequestDTO() {
 		super();
+	}
+
+	public Integer getEmployeeId() {
+		return employeeId;
+	}
+
+	public void setEmployeeId(Integer employeeId) {
+		this.employeeId = employeeId;
 	}
 
 	public String getName() {
@@ -41,11 +53,11 @@ public class EmployeeUpdateRequestDTO {
 		this.managerId = managerId;
 	}
 
-	public Double getSalary() {
+	public BigDecimal getSalary() {
 		return salary;
 	}
 
-	public void setSalary(Double salary) {
+	public void setSalary(BigDecimal salary) {
 		this.salary = salary;
 	}
 
@@ -73,9 +85,22 @@ public class EmployeeUpdateRequestDTO {
 		this.voterID = voterID;
 	}
 
-    
-    
-    
+	public LocalDateTime getCreatedDateTime() {
+		return createdDateTime;
+	}
+
+	public void setCreatedDateTime(LocalDateTime createdDateTime) {
+		this.createdDateTime = createdDateTime;
+	}
+
+	public LocalDateTime getUpdatedDateTime() {
+		return updatedDateTime;
+	}
+
+	public void setUpdatedDateTime(LocalDateTime updatedDateTime) {
+		this.updatedDateTime = updatedDateTime;
+	}
+
     // Getters and setters
 }
 

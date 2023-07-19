@@ -1,22 +1,32 @@
 package com.employeemanagementsystem;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.validation.Valid;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
-
-import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/employees")
@@ -25,6 +35,7 @@ public class EmployeeController {
  
     private final Validator validator;
  
+   
 
     public EmployeeController(EmployeeService employeeService, Validator validator) {
 		super();
@@ -32,39 +43,7 @@ public class EmployeeController {
 		this.validator = validator;
 	}
 
-
-
-
-
-//    @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE)
-//    public ResponseEntity<String> createEmployee(@RequestBody @Valid EmployeeDTO employeeDTO,
-//                                                 BindingResult bindingResult) {
-//        if (bindingResult.hasErrors()) {
-//            List<String> errors = new ArrayList<>();
-//            for (FieldError error : bindingResult.getFieldErrors()) {
-//                errors.add(error.getField() + ": " + error.getDefaultMessage());
-//            }
-//            return ResponseEntity.badRequest().body(errors.toString());
-//        }
-//
-//        try {
-//            Employee employee = convertToEntity(employeeDTO);
-//            List<PhoneNumber> phoneNumbers = convertPhoneNumbersToEntities(employeeDTO.getPhoneNumbers());
-//            VoterID voterID = convertVoterIDToEntity(employeeDTO.getVoterID());
-//
-//            employeeService.createEmployee(employee, phoneNumbers, voterID);
-//
-//            return new ResponseEntity<>("Employee created successfully", HttpStatus.CREATED);
-//        } catch (IllegalArgumentException e) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to create employee: " + e.getMessage());
-//        } catch (IllegalStateException e) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT).body("Failed to create employee: " + e.getMessage());
-//        } catch (Throwable t) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create employee: " + t.toString());
-//        }
-//    }
-    
-    
+  
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createEmployee(@RequestBody @Valid EmployeeDTO employeeDTO) {
         try {
@@ -77,12 +56,23 @@ public class EmployeeController {
             }
 
             Employee employee = convertToEntity(employeeDTO);
-            List<PhoneNumber> phoneNumbers = convertPhoneNumbersToEntities(employeeDTO.getPhoneNumbers());
-            VoterID voterID = convertVoterIDToEntity(employeeDTO.getVoterID());
+            
+            if (employeeDTO.getPhoneNumbers() != null && !employeeDTO.getPhoneNumbers().isEmpty()) {
+                List<PhoneNumber> phoneNumbers = convertPhoneNumbersToEntities(employeeDTO.getPhoneNumbers());
+                for (PhoneNumber phoneNumber : phoneNumbers) {
+                    phoneNumber.setEmployee(employee);
+                }
+                employee.setPhoneNumbers(phoneNumbers);
+            }
+            
+            if (employeeDTO.getVoterID() != null) {
+                VoterID voterID = convertVoterIDToEntity(employeeDTO.getVoterID());
+                employee.setVoterID(voterID);
+            }
 
-            employeeService.createEmployee(employee, phoneNumbers, voterID);
+            employeeService.createEmployee(employee);
+
             return ResponseEntity.ok("Employee created successfully");
-//            return ResponseEntity.status(HttpStatus.CREATED).body(employee);
         } catch (DuplicateKeyException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Employee creation failed: " + e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -93,8 +83,8 @@ public class EmployeeController {
     }
 
 
-
     
+ 
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getEmployeeById(@PathVariable Integer id) {
@@ -113,15 +103,16 @@ public class EmployeeController {
         }
     }
 
+
     @GetMapping("/managers/{managerId}")
-    public ResponseEntity<List<EmployeeResponseDTO>> getEmployeesByManagerId(@PathVariable Integer managerId) {
+    public ResponseEntity<List<EmployeeDTO>> getEmployeesByManagerId(@PathVariable Integer managerId) {
         try {
             List<Employee> employees = employeeService.getEmployeesByManagerId(managerId);
             if (!employees.isEmpty()) {
-                List<EmployeeResponseDTO> employeeResponses = employees.stream()
-                        .map(this::convertToResponseDTO)
+                List<EmployeeDTO> employeeDTOs = employees.stream()
+                        .map(this::convertToDTO)
                         .collect(Collectors.toList());
-                return ResponseEntity.ok(employeeResponses);
+                return ResponseEntity.ok(employeeDTOs);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ArrayList<>());
             }
@@ -138,7 +129,7 @@ public class EmployeeController {
             List<String> errors = new ArrayList<>();
             for (FieldError error : bindingResult.getFieldErrors()) {
                 errors.add(error.getField() + ": " + error.getDefaultMessage());
-            }
+           }
             return ResponseEntity.badRequest().body(errors.toString());
         }
 
@@ -153,6 +144,8 @@ public class EmployeeController {
                     .body("Failed to update employee details: " + t.toString());
         }
     }
+    
+    
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteEmployee(@PathVariable Integer id) {
         try {
@@ -211,6 +204,8 @@ public class EmployeeController {
         return voterID;
     }
 
+ 
+
     private EmployeeDTO convertToDTO(Employee employee) {
         EmployeeDTO employeeDTO = new EmployeeDTO();
         employeeDTO.setEmployeeId(employee.getEmployeeId());
@@ -219,6 +214,10 @@ public class EmployeeController {
         employeeDTO.setManagerId(employee.getManagerId());
         employeeDTO.setSalary(employee.getSalary());
         employeeDTO.setEmailId(employee.getEmailId());
+        employeeDTO.setCreatedDateTime(employee.getCreatedDateTime());
+        employeeDTO.setUpdatedDateTime(employee.getUpdatedDateTime());
+        System.out.println(employee.getCreatedDateTime());
+        System.out.println(employee.getUpdatedDateTime());
 
         List<PhoneNumberDTO> phoneNumberDTOs = new ArrayList<>();
         for (PhoneNumber phoneNumber : employee.getPhoneNumbers()) {
@@ -231,43 +230,18 @@ public class EmployeeController {
         }
         employeeDTO.setPhoneNumbers(phoneNumberDTOs);
 
-        VoterIDDTO voterIDDTO = new VoterIDDTO();
-        voterIDDTO.setVoterId(employee.getVoterID().getVoterId());
-        voterIDDTO.setEmployeeId(employee.getVoterID().getEmployeeId());
-        voterIDDTO.setVoterNumber(employee.getVoterID().getVoterNumber());
-        voterIDDTO.setCity(employee.getVoterID().getCity());
-        employeeDTO.setVoterID(voterIDDTO);
+        if (employee.getVoterID() != null) {
+            VoterID voterID = employee.getVoterID();
+            VoterIDDTO voterIDDTO = new VoterIDDTO();
+            voterIDDTO.setVoterId(voterID.getVoterId());
+            voterIDDTO.setEmployeeId(voterID.getEmployeeId());
+            voterIDDTO.setVoterNumber(voterID.getVoterNumber());
+            voterIDDTO.setCity(voterID.getCity());
+            employeeDTO.setVoterID(voterIDDTO);
+        }
 
         return employeeDTO;
     }
 
-    private EmployeeResponseDTO convertToResponseDTO(Employee employee) {
-        EmployeeResponseDTO responseDTO = new EmployeeResponseDTO();
-        responseDTO.setEmployeeId(employee.getEmployeeId());
-        responseDTO.setName(employee.getName());
-        responseDTO.setDob(employee.getDob());
-        responseDTO.setManagerId(employee.getManagerId());
-        responseDTO.setSalary(employee.getSalary());
-        responseDTO.setEmailId(employee.getEmailId());
-
-        List<PhoneNumberDTO> phoneNumberDTOs = new ArrayList<>();
-        for (PhoneNumber phoneNumber : employee.getPhoneNumbers()) {
-            PhoneNumberDTO phoneNumberDTO = new PhoneNumberDTO();
-            phoneNumberDTO.setPhoneId(phoneNumber.getPhoneId());
-            phoneNumberDTO.setPhoneNumber(phoneNumber.getPhoneNumber());
-            phoneNumberDTO.setProvider(phoneNumber.getProvider());
-            phoneNumberDTO.setType(phoneNumber.getType());
-            phoneNumberDTOs.add(phoneNumberDTO);
-        }
-        responseDTO.setPhoneNumbers(phoneNumberDTOs);
-
-        VoterIDDTO voterIDDTO = new VoterIDDTO();
-        voterIDDTO.setVoterId(employee.getVoterID().getVoterId());
-        voterIDDTO.setEmployeeId(employee.getVoterID().getEmployeeId());
-        voterIDDTO.setVoterNumber(employee.getVoterID().getVoterNumber());
-        voterIDDTO.setCity(employee.getVoterID().getCity());
-        responseDTO.setVoterID(voterIDDTO);
-
-        return responseDTO;
     }
-}
+
